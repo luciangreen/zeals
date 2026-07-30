@@ -1,0 +1,1953 @@
+GitHub Agent Prolog Program Requirements
+
+ZEALS: Zoned Expert Algorithmic Layer Synthesis
+
+Target language: SWI-Prolog
+Primary deliverable: PROGRAM_REQUIREMENTS.md
+Implementation style: modular, deterministic where practical, test-driven, explainable, and suitable for staged implementation by a GitHub coding agent
+
+⸻
+
+1. Project Summary
+
+Implement a SWI-Prolog system named ZEALS that generates a series of simplified algorithmic models, evaluates their strengths and failure boundaries, and synthesises their reliable components into a guarded expert algorithm.
+
+A simplified model is called a perturbation.
+
+Each perturbation solves a restricted version of a larger problem by changing one or more of the following:
+
+* input domain;
+* assumptions;
+* representation;
+* solving method;
+* optimisation objective;
+* resource limit;
+* required output detail;
+* level of approximation.
+
+ZEALS must not treat any individual perturbation as an expert system. It must discover where each perturbation works, where it fails, and how its verified components can be combined with other perturbations.
+
+The final expert algorithm must:
+
+* classify an input problem;
+* select an appropriate method;
+* verify that the method is applicable;
+* execute it;
+* independently verify the result where possible;
+* fall back to another method when necessary;
+* explain its reasoning;
+* return an explicit unresolved result when no safe method applies.
+
+⸻
+
+2. Primary Objectives
+
+The implementation must support the following workflow:
+
+Define problem
+    ↓
+Generate simplified perturbations
+    ↓
+Execute perturbations on test cases
+    ↓
+Measure behaviour
+    ↓
+Infer capability regions
+    ↓
+Detect failure boundaries
+    ↓
+Extract reusable components
+    ↓
+Construct a guarded expert algorithm
+    ↓
+Verify the synthesised algorithm
+    ↓
+Emit executable Prolog and reports
+
+The system must prioritise:
+
+1. correctness;
+2. explicit assumptions;
+3. explainability;
+4. safe failure;
+5. modularity;
+6. reproducibility;
+7. incremental extensibility.
+
+Performance optimisation is secondary to semantic correctness in the first release.
+
+⸻
+
+3. Scope of the First Release
+
+The first release must provide:
+
+* a declarative problem-specification format;
+* perturbation definitions;
+* generation of perturbations from declared dimensions;
+* execution of perturbations against cases;
+* result and trace collection;
+* capability-region inference;
+* failure-boundary inference;
+* component extraction;
+* synthesis of guarded expert algorithms;
+* independent result verification;
+* explanation generation;
+* Prolog source output;
+* human-readable reports;
+* unit and integration tests;
+* a command-line interface;
+* an interactive SWI-Prolog interface.
+
+The first release does not need to:
+
+* invent arbitrary Prolog code from unrestricted natural language;
+* prove complete semantic equivalence between arbitrary programs;
+* support distributed execution;
+* modify its own source code while running;
+* train statistical neural networks;
+* depend on external machine-learning frameworks;
+* provide a graphical user interface;
+* guarantee optimal synthesis;
+* solve unrestricted theorem-proving problems.
+
+⸻
+
+4. Terminology
+
+4.1 Problem
+
+A structured declaration of the task to be solved.
+
+4.2 Case
+
+A test or evaluation instance associated with a problem.
+
+4.3 Perturbation
+
+A restricted algorithmic model that solves a simplified version of a problem.
+
+4.4 Capability region
+
+The set of input features and conditions under which a perturbation is considered reliable.
+
+4.5 Failure boundary
+
+A minimal feature distinction separating known successful cases from known failing cases.
+
+4.6 Component
+
+A reusable part of a perturbation, such as a recogniser, solver, verifier, normaliser, estimator, or explanation generator.
+
+4.7 Expert algorithm
+
+A synthesised guarded algorithm that selects, applies, verifies, and explains methods across a wider domain than any single perturbation.
+
+4.8 Synthesis plan
+
+An intermediate representation describing how components are combined.
+
+4.9 Verification
+
+A check that a candidate output satisfies the original problem specification and declared invariants.
+
+⸻
+
+5. Repository Structure
+
+The implementation should use the following structure:
+
+zeals/
+├── README.md
+├── PROGRAM_REQUIREMENTS.md
+├── pack.pl
+├── prolog/
+│   ├── zeals.pl
+│   ├── zeals_problem.pl
+│   ├── zeals_case.pl
+│   ├── zeals_perturbation.pl
+│   ├── zeals_generate.pl
+│   ├── zeals_execute.pl
+│   ├── zeals_profile.pl
+│   ├── zeals_boundary.pl
+│   ├── zeals_component.pl
+│   ├── zeals_synthesise.pl
+│   ├── zeals_verify.pl
+│   ├── zeals_explain.pl
+│   ├── zeals_emit.pl
+│   ├── zeals_report.pl
+│   ├── zeals_cli.pl
+│   ├── zeals_repl.pl
+│   ├── zeals_registry.pl
+│   └── zeals_util.pl
+├── examples/
+│   ├── maths_zeals.pl
+│   ├── sorting_zeals.pl
+│   └── classification_zeals.pl
+├── test/
+│   ├── test_problem.pl
+│   ├── test_generation.pl
+│   ├── test_execution.pl
+│   ├── test_profile.pl
+│   ├── test_boundary.pl
+│   ├── test_components.pl
+│   ├── test_synthesis.pl
+│   ├── test_verification.pl
+│   ├── test_emission.pl
+│   └── test_integration.pl
+└── docs/
+    ├── architecture.md
+    ├── language.md
+    ├── synthesis.md
+    ├── examples.md
+    └── limitations.md
+
+Module names may be adjusted if necessary, but responsibilities must remain separated.
+
+⸻
+
+6. Supported Prolog Environment
+
+The program must target a current SWI-Prolog release.
+
+The implementation may use standard SWI-Prolog libraries, including:
+
+library(apply).
+library(assoc).
+library(clpfd).
+library(debug).
+library(error).
+library(filesex).
+library(gensym).
+library(lists).
+library(option).
+library(ordsets).
+library(pairs).
+library(plunit).
+library(readutil).
+library(solution_sequences).
+library(ugraphs).
+library(yall).
+
+External dependencies should be avoided in the first release unless they provide a substantial benefit.
+
+All external dependencies must be documented in README.md and pack.pl.
+
+⸻
+
+7. Core Data Model
+
+7.1 Problem declaration
+
+A problem must be representable as:
+
+problem(
+    ProblemId,
+    Inputs,
+    Outputs,
+    Preconditions,
+    Invariants,
+    Objectives,
+    Constraints
+).
+
+Example:
+
+problem(
+    solve_equation,
+    [equation, target_variable],
+    [solution_set, explanation],
+    [well_formed_expression],
+    [solutions_satisfy_original],
+    [correctness, clarity, low_cost],
+    [time_limit_seconds(5)]
+).
+
+The implementation may also support a dictionary form:
+
+problem{
+    id: solve_equation,
+    inputs: [equation, target_variable],
+    outputs: [solution_set, explanation],
+    preconditions: [well_formed_expression],
+    invariants: [solutions_satisfy_original],
+    objectives: [correctness, clarity, low_cost],
+    constraints: [time_limit_seconds(5)]
+}.
+
+The internal representation must be normalised before processing.
+
+7.2 Case declaration
+
+Cases must support:
+
+case(
+    CaseId,
+    ProblemId,
+    Input,
+    ExpectedClass,
+    ExpectedOutput,
+    Metadata
+).
+
+ExpectedOutput may be one of:
+
+exact(Value).
+one_of(Values).
+satisfies(Verifier).
+unknown.
+unsupported.
+
+Metadata may include:
+
+[
+    tags([linear, exact]),
+    source(user),
+    difficulty(basic),
+    expected_cost(low)
+]
+
+7.3 Perturbation declaration
+
+A perturbation must include:
+
+perturbation(
+    PerturbationId,
+    ProblemId,
+    Restrictions,
+    Assumptions,
+    Representation,
+    Method,
+    Objectives,
+    Contract
+).
+
+Example:
+
+perturbation(
+    linear_equation_solver,
+    solve_equation,
+    [degree_at_most(1), one_target_variable],
+    [nonzero_denominators],
+    expression_tree,
+    isolate_variable,
+    [exactness, clarity],
+    contract(
+        recognise_linear_equation,
+        solve_linear_equation,
+        verify_by_substitution
+    )
+).
+
+7.4 Result declaration
+
+Every execution must produce a structured result:
+
+result(
+    PerturbationId,
+    CaseId,
+    Status,
+    Output,
+    Cost,
+    Confidence,
+    Trace,
+    Diagnostics
+).
+
+Supported statuses must include:
+
+correct.
+incorrect.
+partial.
+unsupported.
+timeout.
+exception.
+contradiction.
+unsafe.
+unknown.
+verification_failed.
+
+7.5 Capability rule
+
+capability(
+    PerturbationId,
+    PositiveConditions,
+    NegativeConditions,
+    Confidence,
+    Evidence
+).
+
+7.6 Boundary declaration
+
+failure_boundary(
+    PerturbationId,
+    BoundaryCondition,
+    SuccessEvidence,
+    FailureEvidence,
+    Confidence
+).
+
+7.7 Component declaration
+
+component(
+    ComponentId,
+    SourcePerturbation,
+    ComponentType,
+    PredicateIndicator,
+    Contract,
+    Metadata
+).
+
+Supported component types must include:
+
+recogniser.
+normaliser.
+precondition_checker.
+solver.
+candidate_generator.
+verifier.
+error_detector.
+cost_estimator.
+confidence_estimator.
+explanation_generator.
+decomposer.
+combiner.
+
+7.8 Synthesis plan
+
+The expert algorithm must first be represented as data.
+
+Required synthesis terms:
+
+guarded(Condition, ThenPlan, ElsePlan).
+sequence(Plans).
+fallback(Plans).
+agreement(Plans).
+union(Plans).
+candidates(Plans).
+refine(InitialPlan, RefinementPlan).
+decompose(Splitter, Subplan, Combiner).
+method(ComponentId).
+verify(VerifierId, Plan).
+explain(ExplanationId, Plan).
+fail_with(Status, Reason).
+
+⸻
+
+8. Problem Registration
+
+The system must expose predicates similar to:
+
+register_problem(+Problem).
+unregister_problem(+ProblemId).
+problem_registered(?ProblemId).
+get_problem(+ProblemId, -Problem).
+validate_problem(+Problem).
+
+Registration must reject:
+
+* duplicate problem identifiers unless replacement is explicitly requested;
+* malformed declarations;
+* missing required fields;
+* invalid predicate indicators;
+* unsupported objective or constraint structures.
+
+Replacement should require an explicit option:
+
+register_problem(Problem, [replace(true)]).
+
+⸻
+
+9. Case Registration
+
+Required predicates:
+
+register_case(+Case).
+register_cases(+Cases).
+get_case(+CaseId, -Case).
+cases_for_problem(+ProblemId, -Cases).
+validate_case(+Case).
+
+The system must distinguish:
+
+* training cases;
+* verification cases;
+* boundary cases;
+* adversarial cases;
+* regression cases.
+
+This may be expressed using metadata tags.
+
+A case must not be used simultaneously for training and final held-out verification unless explicitly declared.
+
+⸻
+
+10. Perturbation Generation
+
+10.1 Generation dimensions
+
+The generator must support these perturbation dimensions:
+
+domain.
+feature_set.
+assumption_set.
+method.
+representation.
+objective.
+resource_limit.
+output_detail.
+approximation_level.
+decomposition_strategy.
+
+10.2 Perturbation specification
+
+Generation rules should be declarative:
+
+perturbation_dimension(
+    ProblemId,
+    Dimension,
+    Values
+).
+
+Example:
+
+perturbation_dimension(
+    solve_equation,
+    domain,
+    [
+        integers,
+        rationals,
+        reals
+    ]
+).
+perturbation_dimension(
+    solve_equation,
+    method,
+    [
+        lookup,
+        rearrangement,
+        factorisation,
+        quadratic_formula,
+        numeric_search
+    ]
+).
+
+10.3 Controlled combination
+
+The generator must avoid unrestricted Cartesian explosion.
+
+It must support:
+
+generation_limit(MaxPerturbations).
+compatible_setting(DimensionA, ValueA, DimensionB, ValueB).
+incompatible_setting(DimensionA, ValueA, DimensionB, ValueB).
+required_setting(DimensionA, ValueA, DimensionB, ValueB).
+
+The generator must:
+
+1. enumerate candidate combinations;
+2. reject incompatible combinations early;
+3. check required dependencies;
+4. estimate the number of resulting perturbations;
+5. warn or stop when a declared limit is exceeded.
+
+Required predicates:
+
+generate_perturbations(+ProblemId, -Perturbations).
+generate_perturbations(+ProblemId, +Options, -Perturbations).
+estimate_perturbation_count(+ProblemId, -Count).
+
+Options should include:
+
+[
+    max_count(100),
+    include_dimensions([domain, method]),
+    exclude_settings([approximation_level(unbounded)]),
+    deterministic_order(true)
+]
+
+⸻
+
+11. Perturbation Contracts
+
+Every executable perturbation must declare a contract:
+
+method_contract(
+    MethodId,
+    Recogniser,
+    Preconditions,
+    Executor,
+    Postconditions,
+    FailureModes,
+    Verifier
+).
+
+Before execution, the system must:
+
+1. call the recogniser;
+2. establish declared preconditions;
+3. reject the method when its preconditions are not established;
+4. execute the method in a protected context;
+5. check local postconditions;
+6. invoke its verifier;
+7. record all stages in the trace.
+
+A perturbation must never silently claim success when:
+
+* a precondition is unknown;
+* execution throws an exception;
+* verification fails;
+* output violates an invariant;
+* a resource limit is exceeded.
+
+⸻
+
+12. Execution Engine
+
+Required predicates:
+
+execute_perturbation(
+    +PerturbationId,
+    +CaseId,
+    -Result
+).
+execute_perturbation(
+    +PerturbationId,
+    +CaseId,
+    +Options,
+    -Result
+).
+execute_all(
+    +ProblemId,
+    -Results
+).
+execute_matrix(
+    +PerturbationIds,
+    +CaseIds,
+    -Results
+).
+
+Options should include:
+
+[
+    timeout_seconds(5),
+    catch_exceptions(true),
+    collect_trace(true),
+    verify(true),
+    measure_inferences(true),
+    measure_wall_time(true)
+]
+
+Execution must be reproducible where the underlying predicates are deterministic.
+
+The first release may execute perturbations sequentially.
+
+Parallel execution may be added later but is not required.
+
+⸻
+
+13. Trace Format
+
+Every execution must generate a structured trace.
+
+Required trace events include:
+
+trace_event(started, Data).
+trace_event(recognised, Data).
+trace_event(precondition_checked, Data).
+trace_event(normalised, Data).
+trace_event(method_selected, Data).
+trace_event(candidate_generated, Data).
+trace_event(postcondition_checked, Data).
+trace_event(verification_started, Data).
+trace_event(verification_passed, Data).
+trace_event(verification_failed, Data).
+trace_event(fallback_selected, Data).
+trace_event(exception, Data).
+trace_event(completed, Data).
+
+Trace events must be machine-readable and convertible to human-readable explanations.
+
+The implementation must not depend on parsing printed debug output.
+
+⸻
+
+14. Behavioural Profiling
+
+The profiler must analyse result collections and calculate:
+
+* success count;
+* failure count;
+* unsupported count;
+* timeout count;
+* verification-failure count;
+* coverage;
+* precision;
+* false-applicability rate;
+* average runtime;
+* average inference count;
+* explanation availability;
+* confidence calibration where applicable.
+
+Required predicates:
+
+profile_perturbation(
+    +PerturbationId,
+    +Results,
+    -Profile
+).
+profile_all(
+    +ProblemId,
+    +Results,
+    -Profiles
+).
+
+Suggested profile form:
+
+profile{
+    perturbation: linear_solver,
+    attempted: 50,
+    correct: 38,
+    incorrect: 2,
+    unsupported: 10,
+    coverage: 0.76,
+    verified_precision: 0.95,
+    average_time_ms: 0.8,
+    false_applicability_rate: 0.04
+}.
+
+⸻
+
+15. Feature Extraction
+
+Capability and boundary detection require explicit input features.
+
+Each problem must declare or provide:
+
+extract_features(
+    +ProblemId,
+    +Input,
+    -Features
+).
+
+Features should be represented as ground terms:
+
+[
+    variable_count(1),
+    maximum_degree(2),
+    contains_division(false),
+    contains_transcendental(false),
+    coefficient_domain(integers)
+]
+
+Feature extraction must be deterministic for a given normalised input.
+
+The system must support custom feature extractors per problem.
+
+⸻
+
+16. Capability-Region Inference
+
+The first release must infer conservative symbolic capability rules from observed outcomes.
+
+It does not need statistical machine learning.
+
+The algorithm should:
+
+1. collect features from successful cases;
+2. collect features from failed and unsupported cases;
+3. identify conditions shared by successful cases;
+4. exclude conditions strongly associated with failures;
+5. generate candidate positive and negative rules;
+6. test the rules against all available evidence;
+7. retain only rules meeting configured thresholds;
+8. record evidence and confidence.
+
+Required predicates:
+
+infer_capability(
+    +PerturbationId,
+    +Results,
+    -Capability
+).
+infer_capabilities(
+    +ProblemId,
+    +Results,
+    -Capabilities
+).
+capability_applies(
+    +Capability,
+    +Features
+).
+
+The system must prefer rules that are:
+
+* simple;
+* conservative;
+* explainable;
+* supported by explicit evidence.
+
+A rule must not be presented as certain unless all observed evidence supports it.
+
+⸻
+
+17. Failure-Boundary Detection
+
+The boundary detector must compare successful and failing cases that differ minimally.
+
+Required workflow:
+
+Select success/failure pair
+    ↓
+Extract features
+    ↓
+Calculate feature difference
+    ↓
+Remove irrelevant differences
+    ↓
+Generate candidate boundary
+    ↓
+Test candidate boundary on other cases
+    ↓
+Store evidence and confidence
+
+Required predicates:
+
+detect_failure_boundaries(
+    +PerturbationId,
+    +Results,
+    -Boundaries
+).
+minimal_feature_difference(
+    +SuccessFeatures,
+    +FailureFeatures,
+    -Difference
+).
+validate_boundary(
+    +Boundary,
+    +Results,
+    -Validation
+).
+
+The first release may use a greedy minimisation procedure.
+
+It must document that inferred boundaries are evidence-based approximations unless formally proven.
+
+⸻
+
+18. Component Extraction
+
+The system must extract reusable components from perturbation declarations and execution traces.
+
+Required predicates:
+
+extract_components(
+    +PerturbationId,
+    -Components
+).
+extract_all_components(
+    +ProblemId,
+    -Components
+).
+component_dependencies(
+    +Components,
+    -DependencyGraph
+).
+
+The system must identify:
+
+* duplicate components;
+* equivalent predicate indicators;
+* declared dependencies;
+* ordering requirements;
+* incompatible components;
+* components that require unavailable assumptions;
+* components with insufficient verification evidence.
+
+Component reuse must preserve the original contract.
+
+A component must not be detached from a required precondition.
+
+⸻
+
+19. Dependency Graph
+
+Components must be represented as a directed graph.
+
+Example edges:
+
+depends_on(linear_solver, expression_normaliser).
+depends_on(substitution_verifier, expression_evaluator).
+must_precede(expression_normaliser, linear_solver).
+conflicts_with(exact_only_solver, approximate_only_output).
+
+Required predicates:
+
+build_dependency_graph(
+    +Components,
+    -Graph
+).
+topological_component_order(
+    +Graph,
+    -OrderedComponents
+).
+detect_component_cycles(
+    +Graph,
+    -Cycles
+).
+
+Cycles must be reported with actionable diagnostics.
+
+The system must not emit an expert algorithm with unresolved dependency cycles.
+
+⸻
+
+20. Synthesis Strategy
+
+The synthesiser must construct an expert algorithm from verified components and inferred capability regions.
+
+Required phases:
+
+1. collect candidate methods;
+2. discard unsafe or unverified components;
+3. group methods by capability region;
+4. order specialised methods before general methods;
+5. insert precondition guards;
+6. insert verification steps;
+7. insert fallbacks;
+8. insert explicit unresolved branches;
+9. produce an intermediate synthesis plan;
+10. validate the plan;
+11. emit executable Prolog.
+
+Required predicates:
+
+synthesise_expert(
+    +ProblemId,
+    -Plan
+).
+synthesise_expert(
+    +ProblemId,
+    +Options,
+    -Plan
+).
+validate_synthesis_plan(
+    +ProblemId,
+    +Plan,
+    -Validation
+).
+
+Options should include:
+
+[
+    prefer_exact(true),
+    prefer_specialised(true),
+    require_independent_verification(true),
+    maximum_plan_depth(20),
+    allow_approximation(true),
+    unresolved_policy(return_unknown)
+]
+
+⸻
+
+21. Method Ranking
+
+Applicable methods must be ranked using deterministic scoring.
+
+The score may consider:
+
+* verified correctness;
+* applicability confidence;
+* exactness;
+* coverage;
+* expected runtime;
+* expected memory;
+* proof strength;
+* explanation quality;
+* failure risk;
+* method specificity.
+
+Required predicate:
+
+rank_method(
+    +ProblemId,
+    +Features,
+    +MethodId,
+    -Score,
+    -Reasons
+).
+
+Default ranking priority:
+
+1. Satisfied safety requirements
+2. Verified exact method
+3. Strong applicability evidence
+4. More specialised method
+5. Lower expected failure risk
+6. Lower expected execution cost
+7. Better explanation support
+
+A method that violates a required invariant must never receive a usable score.
+
+⸻
+
+22. Verification
+
+Verification is mandatory for synthesised expert execution unless explicitly disabled for diagnostic purposes.
+
+Required predicate:
+
+verify_candidate(
+    +ProblemId,
+    +Input,
+    +Candidate,
+    -Verification
+).
+
+Verification results must include:
+
+verified(Evidence).
+failed(Reason, Evidence).
+unknown(Reason).
+unsupported(Reason).
+
+Where possible, verification should use a method that is operationally independent from the candidate generator.
+
+Examples:
+
+* solve symbolically, verify by substitution;
+* generate sorted output, verify order and permutation;
+* classify input, verify required class invariants;
+* derive a proof, verify each proof step.
+
+The system must distinguish between:
+
+* generation success;
+* verification success.
+
+A generated answer is not a valid expert answer until verification succeeds or the problem explicitly permits unverified output.
+
+⸻
+
+23. Expert Runtime
+
+The emitted expert algorithm must follow this general behaviour:
+
+expert_solve(Input, Result, Explanation) :-
+    validate_input(Input),
+    analyse_input(Input, Features),
+    applicable_methods(Features, Methods),
+    rank_methods(Features, Methods, Ranked),
+    try_ranked_methods(Ranked, Input, Result, Trace),
+    explain_result(Input, Result, Trace, Explanation).
+
+The runtime must:
+
+1. validate the input;
+2. extract features;
+3. identify applicable methods;
+4. rank the methods;
+5. try methods in ranked order;
+6. verify each candidate;
+7. stop after the first accepted verified result unless multiple solutions are required;
+8. record failed attempts;
+9. explain the selected method;
+10. return unknown when no safe method succeeds.
+
+Required unresolved form:
+
+unknown(
+    reason(NoApplicableVerifiedMethod),
+    attempted(Methods),
+    diagnostics(Diagnostics)
+).
+
+⸻
+
+24. Conflict Resolution
+
+When methods disagree, the system must apply these rules:
+
+1. reject candidates that violate invariants;
+2. reject candidates that fail verification;
+3. prefer exact outputs over approximate outputs;
+4. prefer candidates supported by independent agreement;
+5. preserve multiple answers where the problem permits multiple valid solutions;
+6. reject arbitrary tie-breaking between contradictory verified outputs;
+7. return an explicit contradiction report when disagreement cannot be resolved.
+
+Required predicate:
+
+resolve_candidates(
+    +ProblemId,
+    +Input,
+    +Candidates,
+    -Resolution
+).
+
+Possible resolutions:
+
+accepted(Candidate, Evidence).
+accepted_multiple(Candidates, Evidence).
+contradiction(Candidates, Diagnostics).
+unknown(Reason).
+
+⸻
+
+25. Explanation Generation
+
+The system must generate an explanation from structured traces.
+
+Required explanation fields:
+
+* detected problem class;
+* extracted relevant features;
+* selected method;
+* reasons for selection;
+* assumptions used;
+* major transformation steps;
+* verification method;
+* verification result;
+* rejected alternatives;
+* uncertainty or limitations.
+
+Required predicates:
+
+explain_execution(
+    +ProblemId,
+    +Input,
+    +Result,
+    +Trace,
+    -Explanation
+).
+explain_capability(
+    +Capability,
+    -Explanation
+).
+explain_boundary(
+    +Boundary,
+    -Explanation
+).
+
+The first release may output explanations as:
+
+* Prolog terms;
+* plain text;
+* Markdown.
+
+Markdown output is required for reports.
+
+⸻
+
+26. Source-Code Emission
+
+The system must emit a standalone or near-standalone SWI-Prolog module representing the synthesised expert algorithm.
+
+Required predicate:
+
+emit_expert_module(
+    +ProblemId,
+    +Plan,
+    +File,
+    +Options
+).
+
+The emitted module must include:
+
+:- module(GeneratedModule, [
+    expert_solve/3,
+    expert_capabilities/1
+]).
+
+The emitter must:
+
+* generate valid SWI-Prolog syntax;
+* preserve deterministic branch order;
+* include required imports;
+* include generated comments;
+* include method contracts or references to them;
+* include capability metadata;
+* include an unresolved fallback;
+* avoid undefined predicate references;
+* optionally include debug traces.
+
+Options should include:
+
+[
+    module_name(Name),
+    include_comments(true),
+    include_trace(false),
+    standalone(false)
+]
+
+The generated code must be loadable using:
+
+?- consult('generated_expert.pl').
+
+⸻
+
+27. Reporting
+
+The system must generate a synthesis report containing:
+
+* problem summary;
+* perturbations generated;
+* perturbations rejected before execution;
+* case coverage;
+* result matrix;
+* capability regions;
+* failure boundaries;
+* extracted components;
+* discarded components;
+* dependency graph summary;
+* ranking policy;
+* final synthesis plan;
+* verification results;
+* known limitations;
+* unresolved cases.
+
+Required predicate:
+
+write_synthesis_report(
+    +ProblemId,
+    +File,
+    +Options
+).
+
+Markdown must be supported.
+
+Optional formats may include:
+
+prolog.
+json.
+csv.
+
+⸻
+
+28. Command-Line Interface
+
+The program must expose a CLI similar to:
+
+swipl -q -s prolog/zeals_cli.pl -- COMMAND ARGUMENTS
+
+Required commands:
+
+validate FILE
+generate FILE
+execute FILE
+profile FILE
+boundaries FILE
+components FILE
+synthesise FILE
+emit FILE OUTPUT
+report FILE OUTPUT
+run FILE INPUT
+test
+
+Examples:
+
+swipl -q -s prolog/zeals_cli.pl -- validate examples/maths_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- synthesise examples/maths_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- emit examples/maths_zeals.pl generated_maths_expert.pl
+
+The CLI must return a nonzero process exit status on validation or execution failure.
+
+⸻
+
+29. Interactive Interface
+
+Required user-facing predicates:
+
+zeals_load(+File).
+zeals_generate(+ProblemId).
+zeals_execute(+ProblemId).
+zeals_profile(+ProblemId).
+zeals_boundaries(+ProblemId).
+zeals_synthesise(+ProblemId).
+zeals_emit(+ProblemId, +File).
+zeals_report(+ProblemId, +File).
+zeals_run(+ProblemId, +Input, -Result).
+
+A simple REPL command predicate may be included:
+
+zeals.
+
+Suggested commands:
+
+load(File)
+problems
+perturbations(Problem)
+generate(Problem)
+execute(Problem)
+profile(Problem)
+boundaries(Problem)
+synthesise(Problem)
+show_plan(Problem)
+emit(Problem, File)
+run(Problem, Input)
+report(Problem, File)
+quit
+
+⸻
+
+30. Maths ZEALS Reference Example
+
+The repository must include an example problem named maths_zeals.
+
+The first implementation may use a deliberately limited expression language.
+
+Supported initial forms should include:
+
+number(N).
+variable(Name).
+add(A, B).
+subtract(A, B).
+multiply(A, B).
+divide(A, B).
+power(A, IntegerExponent).
+equation(Left, Right).
+
+Suggested perturbations:
+
+constant evaluator
+integer arithmetic evaluator
+rational arithmetic evaluator
+one-step equation solver
+linear equation solver
+factorisation solver
+quadratic formula solver
+numeric root approximation
+substitution verifier
+undefined-expression detector
+explanation generator
+
+Required example cases:
+
+2 + 3
+2x + 3 = 7
+x² - 5x + 6 = 0
+x² - 2 = 0
+1 / 0
+x / x = 1
+an equation with no solution
+an equation with infinitely many solutions
+
+The example must demonstrate:
+
+* specialised-method selection;
+* fallback;
+* exact versus approximate output;
+* independent verification;
+* rejected assumptions;
+* explicit unresolved or undefined results.
+
+⸻
+
+31. Determinism Requirements
+
+The implementation should be deterministic for:
+
+* registration;
+* validation;
+* perturbation generation order;
+* profiling;
+* ranking;
+* synthesis-plan generation;
+* report generation;
+* code emission.
+
+Predicates intended to return one result should not leave unintended choicepoints.
+
+Tests should use:
+
+call_cleanup(Goal, Det = true)
+
+or suitable SWI-Prolog determinism checks where practical.
+
+Nondeterminism may be used internally for enumeration, but public deterministic predicates must collect or commit results explicitly.
+
+Cuts may be used only when their operational meaning is local, documented, and covered by tests.
+
+Prefer if-then-else, pattern separation, and once-like wrappers where clearer.
+
+⸻
+
+32. Error Handling
+
+Errors must use structured exceptions where appropriate:
+
+error(zeals_error(Code, Details), Context).
+
+Suggested error codes:
+
+invalid_problem.
+invalid_case.
+duplicate_identifier.
+unknown_problem.
+unknown_case.
+unknown_perturbation.
+invalid_contract.
+generation_limit_exceeded.
+dependency_cycle.
+verification_failed.
+emission_failed.
+unsupported_feature.
+invalid_synthesis_plan.
+
+User-facing errors must identify:
+
+* operation;
+* relevant identifier;
+* failing field or predicate;
+* suggested correction where possible.
+
+The system must not silently ignore malformed declarations.
+
+⸻
+
+33. Logging and Debugging
+
+Use SWI-Prolog debug topics:
+
+debug(zeals).
+debug(zeals(generate)).
+debug(zeals(execute)).
+debug(zeals(profile)).
+debug(zeals(boundary)).
+debug(zeals(synthesise)).
+debug(zeals(verify)).
+debug(zeals(emit)).
+
+Normal operation must not print debugging output unless debugging is enabled.
+
+CLI output should distinguish:
+
+* informational output;
+* warnings;
+* errors;
+* generated artefact paths.
+
+⸻
+
+34. Testing Requirements
+
+Use plunit.
+
+Every module must have dedicated tests.
+
+34.1 Problem tests
+
+Test:
+
+* valid problem registration;
+* malformed problem rejection;
+* duplicate identifiers;
+* replacement option;
+* missing invariants;
+* invalid predicate indicators.
+
+34.2 Generation tests
+
+Test:
+
+* single-dimension generation;
+* multi-dimension generation;
+* compatibility rules;
+* incompatibility rules;
+* required settings;
+* deterministic order;
+* generation-limit enforcement.
+
+34.3 Execution tests
+
+Test:
+
+* correct execution;
+* unsupported perturbation;
+* failed precondition;
+* exception capture;
+* timeout;
+* verification failure;
+* trace completeness.
+
+34.4 Profiling tests
+
+Test:
+
+* correct counts;
+* coverage calculation;
+* precision calculation;
+* false-applicability calculation;
+* empty result sets;
+* mixed statuses.
+
+34.5 Boundary tests
+
+Test:
+
+* one-feature boundary;
+* multiple-feature difference;
+* irrelevant-feature removal;
+* boundary validation;
+* insufficient evidence;
+* contradictory evidence.
+
+34.6 Component tests
+
+Test:
+
+* component extraction;
+* dependency extraction;
+* duplicate detection;
+* conflict detection;
+* cycle detection;
+* required-precondition preservation.
+
+34.7 Synthesis tests
+
+Test:
+
+* guarded selection;
+* fallback composition;
+* sequence composition;
+* independent verification;
+* unresolved fallback;
+* deterministic method ranking;
+* plan validation;
+* contradiction handling.
+
+34.8 Emission tests
+
+Test:
+
+* valid generated syntax;
+* loadable generated module;
+* exported predicates;
+* no undefined local predicates;
+* stable output order;
+* generated algorithm behaviour.
+
+34.9 Integration tests
+
+At minimum, integration tests must demonstrate:
+
+1. registering a problem;
+2. registering cases;
+3. generating perturbations;
+4. executing the result matrix;
+5. profiling perturbations;
+6. detecting a failure boundary;
+7. extracting components;
+8. synthesising a plan;
+9. emitting a Prolog module;
+10. loading and running the emitted module.
+
+⸻
+
+35. Property and Invariant Tests
+
+Where practical, tests must verify invariants rather than only exact outputs.
+
+Examples:
+
+all_reported_solutions_satisfy_original_equation.
+sorted_output_is_ordered.
+sorted_output_is_permutation_of_input.
+accepted_candidate_has_successful_verification.
+generated_plan_has_unresolved_fallback.
+all_selected_methods_have_satisfied_preconditions.
+
+Random test generation may be used, but every random test must be reproducible using a fixed seed.
+
+⸻
+
+36. Acceptance Criteria
+
+The first release is complete when all of the following are true:
+
+1. A user can declare a problem and cases in Prolog.
+2. The program validates those declarations.
+3. The program generates perturbations from declared dimensions.
+4. The program executes perturbations and records structured results.
+5. The program profiles each perturbation.
+6. The program infers at least basic symbolic capability rules.
+7. The program identifies at least one minimal failure boundary in the reference example.
+8. The program extracts reusable components.
+9. The program creates a valid guarded synthesis plan.
+10. The plan includes method selection, verification, fallback, and unresolved behaviour.
+11. The program emits a loadable SWI-Prolog expert module.
+12. The generated module passes integration tests.
+13. The program writes a human-readable Markdown report.
+14. All automated tests pass.
+15. Public predicates are documented.
+16. Known limitations are documented honestly.
+
+⸻
+
+37. Implementation Stages for the GitHub Agent
+
+The GitHub agent must implement the project in stages.
+
+Each stage must include:
+
+* implementation;
+* unit tests;
+* integration where applicable;
+* documentation updates;
+* self-review;
+* full test-suite execution;
+* correction of discovered failures.
+
+Stage 1: Project skeleton
+
+Create:
+
+* repository structure;
+* modules;
+* test harness;
+* pack.pl;
+* base documentation.
+
+Do not implement synthesis logic yet.
+
+Stage 2: Problem and case model
+
+Implement:
+
+* declarations;
+* normalisation;
+* validation;
+* registration;
+* retrieval;
+* tests.
+
+Stage 3: Perturbation model
+
+Implement:
+
+* perturbation declarations;
+* contracts;
+* validation;
+* registry;
+* tests.
+
+Stage 4: Perturbation generation
+
+Implement:
+
+* dimensions;
+* controlled combination;
+* compatibility constraints;
+* count estimation;
+* limits;
+* tests.
+
+Stage 5: Execution engine
+
+Implement:
+
+* guarded execution;
+* resource limits;
+* trace collection;
+* verification hooks;
+* structured results;
+* tests.
+
+Stage 6: Profiling and features
+
+Implement:
+
+* feature extraction interface;
+* profiles;
+* coverage and error metrics;
+* tests.
+
+Stage 7: Capability inference
+
+Implement:
+
+* conservative symbolic rule inference;
+* evidence storage;
+* applicability checking;
+* tests.
+
+Stage 8: Failure-boundary detection
+
+Implement:
+
+* success/failure pairing;
+* feature differences;
+* boundary minimisation;
+* validation;
+* tests.
+
+Stage 9: Component extraction
+
+Implement:
+
+* component metadata;
+* dependencies;
+* conflicts;
+* dependency graph;
+* cycle detection;
+* tests.
+
+Stage 10: Synthesis-plan generation
+
+Implement:
+
+* synthesis terms;
+* ranking;
+* guards;
+* fallbacks;
+* verification nodes;
+* unresolved node;
+* plan validation;
+* tests.
+
+Stage 11: Expert runtime
+
+Implement:
+
+* plan interpreter;
+* ranked method execution;
+* candidate resolution;
+* explanations;
+* tests.
+
+Stage 12: Code emission
+
+Implement:
+
+* generated module writer;
+* imports;
+* metadata;
+* comments;
+* syntax validation;
+* loading tests.
+
+Stage 13: CLI and REPL
+
+Implement:
+
+* commands;
+* help;
+* exit codes;
+* interactive predicates;
+* tests where practical.
+
+Stage 14: Maths ZEALS example
+
+Implement:
+
+* expression representation;
+* selected mathematical perturbations;
+* verification;
+* example cases;
+* full synthesis demonstration.
+
+Stage 15: Reports and final documentation
+
+Implement:
+
+* Markdown report;
+* architecture document;
+* language guide;
+* limitations;
+* examples;
+* final README workflow.
+
+⸻
+
+38. GitHub Agent Working Rules
+
+The coding agent must follow these rules:
+
+1. Inspect existing files before modifying them.
+2. Preserve working behaviour unless a requirement explicitly changes it.
+3. Implement the smallest coherent stage at a time.
+4. Add or update tests with every behavioural change.
+5. Do not weaken tests merely to obtain a passing suite.
+6. Do not change semantics solely to satisfy an incorrect test.
+7. Diagnose the discrepancy and correct the implementation or test based on the requirements.
+8. Run focused tests after each modification.
+9. Run the complete test suite at the end of every stage.
+10. Keep modules cohesive.
+11. Avoid large monolithic predicates.
+12. Use descriptive predicate names.
+13. Add mode comments and PlDoc for public predicates.
+14. Avoid dynamic predicates unless the registry design requires them.
+15. Isolate mutable registry state from pure synthesis logic.
+16. Prefer pure predicates for analysis, profiling, boundary detection, and synthesis.
+17. Record unsupported or deferred functionality in docs/limitations.md.
+18. Do not claim formal proof where only empirical evidence exists.
+19. Keep generated output deterministic.
+20. Leave the repository in a runnable state after every stage.
+
+⸻
+
+39. Code Quality Requirements
+
+Public predicates must include PlDoc comments:
+
+%!  synthesise_expert(+ProblemId, -Plan) is det.
+%
+%   Construct a validated expert-algorithm synthesis plan for ProblemId.
+
+Predicate arguments should use consistent naming.
+
+Preferred naming conventions:
+
+ProblemId
+CaseId
+PerturbationId
+ComponentId
+Features
+Results
+Profile
+Boundary
+Plan
+Options
+Diagnostics
+
+Avoid:
+
+* unexplained abbreviations;
+* predicates with excessive arity;
+* hidden global state;
+* repeated term-shape parsing;
+* string-based internal protocols;
+* unstructured error messages;
+* dependence on term printing for semantic processing.
+
+⸻
+
+40. Documentation Requirements
+
+README.md must include:
+
+* project purpose;
+* installation;
+* quick start;
+* basic problem definition;
+* perturbation definition;
+* synthesis workflow;
+* CLI examples;
+* generated expert example;
+* test command;
+* project status.
+
+docs/architecture.md must explain:
+
+* module responsibilities;
+* data flow;
+* registries;
+* pure versus stateful components;
+* synthesis-plan execution;
+* code emission.
+
+docs/language.md must document all declaration formats.
+
+docs/synthesis.md must explain:
+
+* capability inference;
+* boundaries;
+* ranking;
+* synthesis operators;
+* verification;
+* uncertainty.
+
+docs/limitations.md must identify:
+
+* empirical rather than formally proven inference;
+* finite-case dependence;
+* incomplete domain coverage;
+* unsupported Prolog constructs;
+* possible feature-extractor bias;
+* synthesis scalability limits.
+
+⸻
+
+41. Required Example Session
+
+The completed project must support a workflow conceptually similar to:
+
+?- [examples/maths_zeals].
+?- zeals_generate(solve_equation).
+true.
+?- zeals_execute(solve_equation).
+true.
+?- zeals_profile(solve_equation).
+true.
+?- zeals_boundaries(solve_equation).
+true.
+?- zeals_synthesise(solve_equation).
+true.
+?- zeals_emit(
+       solve_equation,
+       'generated_maths_expert.pl'
+   ).
+true.
+?- [generated_maths_expert].
+?- expert_solve(
+       equation(
+           add(
+               multiply(number(2), variable(x)),
+               number(3)
+           ),
+           number(7)
+       ),
+       Result,
+       Explanation
+   ).
+Result = solutions([x=2]),
+Explanation = ...
+
+The exact syntax may differ, but the complete workflow must be possible.
+
+⸻
+
+42. Future Extensions
+
+These are outside the first release but should remain architecturally possible:
+
+* natural-language problem specification;
+* statistical confidence models;
+* learned method ranking;
+* formal proof integration;
+* theorem-prover-backed capability proofs;
+* automatic counterexample generation;
+* distributed perturbation execution;
+* visual synthesis graphs;
+* HyperCard-style interface;
+* Context-Free Grammar chatbot generation;
+* Piglog scheduling;
+* Detlog deterministic compilation;
+* PLOP optimisation;
+* Loop2 choicepoint removal;
+* Spec-to-Algorithm integration;
+* automatic GitHub issue generation for unsupported cases;
+* incremental synthesis after new cases are added;
+* versioned expert algorithms;
+* domain-specific ZEALS studios.
+
+⸻
+
+43. Final Design Principle
+
+ZEALS must implement expertise as a transparent synthesis of bounded, testable algorithms.
+
+The system must follow this principle:
+
+Generate simpler models.
+Test each model.
+Identify where each model succeeds.
+Identify where each model fails.
+Extract only verified knowledge.
+Guard every reusable method.
+Combine compatible components.
+Verify every candidate result.
+Explain every accepted decision.
+Return uncertainty when expertise is insufficient.
+
+The generated expert algorithm must be broader than its perturbations without concealing their assumptions, limitations, or failure boundaries.
