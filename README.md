@@ -37,6 +37,22 @@ Run with matching input from registered cases:
    ).
 ```
 
+## Showcased example commands
+
+```bash
+swipl -q -s prolog/zeals_cli.pl -- validate examples/maths_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- synthesise examples/maths_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- report examples/maths_zeals.pl maths_report.md
+
+swipl -q -s prolog/zeals_cli.pl -- validate examples/sorting_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- synthesise examples/sorting_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- report examples/sorting_zeals.pl sorting_report.md
+
+swipl -q -s prolog/zeals_cli.pl -- validate examples/classification_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- synthesise examples/classification_zeals.pl
+swipl -q -s prolog/zeals_cli.pl -- report examples/classification_zeals.pl classification_report.md
+```
+
 ## CLI
 
 ```bash
