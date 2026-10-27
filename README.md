@@ -63,6 +63,15 @@ swipl -q -s prolog/zeals_cli.pl -- report examples/maths_zeals.pl zeals_report.m
 swipl -q -s prolog/zeals_cli.pl -- test
 ```
 
+## Feature guide and status
+
+See [docs/features.md](docs/features.md) for the complete feature overview,
+command reference, runnable tests, and current implementation gaps.
+
 ## Project status
 
-The first release implements staged ZEALS architecture with deterministic registries, perturbation generation constraints, guarded execution, verification hooks, profiling, boundary detection, component extraction, synthesis-plan generation, code emission, reports, CLI, REPL entrypoint, and integration tests.
+The first release implements the staged ZEALS analysis workflow,
+synthesis-plan generation, Prolog emission, reports, CLI, and REPL. The
+generated plan is not yet the runtime dispatcher; see the
+[feature status](docs/features.md#remaining-implementation) for current limits
+and next implementation steps.

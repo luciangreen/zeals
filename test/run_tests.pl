@@ -1,16 +1,24 @@
-:- initialization(main, main).
+:- module(zeals_test_runner, [run_all_tests/0]).
+
+run_all_tests :-
+    load_files([
+        'test/test_problem.pl',
+        'test/test_generation.pl',
+        'test/test_execution.pl',
+        'test/test_profile.pl',
+        'test/test_boundary.pl',
+        'test/test_components.pl',
+        'test/test_synthesis.pl',
+        'test/test_verification.pl',
+        'test/test_emission.pl',
+        'test/test_integration.pl'
+    ], [if(not_loaded)]),
+    run_tests.
 
 main :-
-    consult('test/test_problem.pl'),
-    consult('test/test_generation.pl'),
-    consult('test/test_execution.pl'),
-    consult('test/test_profile.pl'),
-    consult('test/test_boundary.pl'),
-    consult('test/test_components.pl'),
-    consult('test/test_synthesis.pl'),
-    consult('test/test_verification.pl'),
-    consult('test/test_emission.pl'),
-    consult('test/test_integration.pl'),
-    run_tests,
-    halt.
+    (   run_all_tests
+    ->  halt(0)
+    ;   halt(1)
+    ).
 
+:- initialization(main, main).
