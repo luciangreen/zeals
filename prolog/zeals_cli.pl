@@ -1,6 +1,7 @@
 :- module(zeals_cli, [main/0]).
 
 :- use_module(zeals).
+:- use_module('../test/run_tests', [run_all_tests/0]).
 
 :- initialization(main, main).
 
@@ -60,8 +61,7 @@ run_cli([run, File, InputAtom]) :-
     zeals:zeals_run(ProblemId, Input, Result),
     writeln(Result).
 run_cli([test]) :-
-    consult('test/run_tests.pl'),
-    run_tests,
+    run_all_tests,
     \+ current_prolog_flag(testing_failed, true).
 run_cli(_) :-
     writeln('Usage: swipl -q -s prolog/zeals_cli.pl -- COMMAND ...'),
